@@ -201,3 +201,4 @@ module.exports.resetPasswordCtrl = asyncHandler(async (req, res) => {
   
     return res.status(200).send({ message: "Password reset successfully" });
   });
+  
