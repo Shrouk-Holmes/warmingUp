@@ -10,6 +10,10 @@ app.use(express.json());
 app.use(express.json());
 
 app.use("/api/auth", require("./routes/authRoute"));
+app.use("/api/users", require("./routes/userRoute"));
+app.use("/api/cart", require("./routes/cartRoute.js"));
+app.use("/api/proudcts", require("./routes/proudctRoute.js"));
+app.use("/api/category", require("./routes/categoryRotes.js"));
 
 
 const PORT = process.env.PORT ||5001
