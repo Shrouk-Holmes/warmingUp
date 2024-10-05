@@ -35,10 +35,13 @@ const ProductSchema = new mongoose.Schema({
         type: Number,
         min: 0,
     },
-    images: [{
-        type: String, 
-        required: true,
-    }],
+    image:[{
+        type: Object,
+        default:{
+         url :"",
+         pubicId : null,
+        }
+     }],
     countInStock: {
         type: Number,
         required: true,
@@ -72,15 +75,28 @@ function validateProduct(product) {
         category: Joi.string().required(),
         price: Joi.number().min(0).required(),
         discount: Joi.number().min(0).max(100),
-        images: Joi.array().items(Joi.string()).required(),
         countInStock: Joi.number().min(0).required(),
     });
 
     return schema.validate(product);
 }
 
+function validateProductPartial(product) {
+    const schema = Joi.object({
+        title: Joi.string().optional(),  // Make title optional for partial updates
+        description: Joi.string().optional(),
+        category: Joi.string().optional(),
+        price: Joi.number().optional(),
+        discount: Joi.number().optional(),
+        countInStock: Joi.number().optional(),
+        imagesToDelete: Joi.array().optional(), // Optional array for images to delete
+    });
+
+    return schema.validate(product);
+}
 // Export the model directly
 module.exports = Product;
 
 // If you still want to export the validate function, do it like this:
 module.exports.validateProduct = validateProduct;
+module.exports.validateProductPartial = validateProductPartial;

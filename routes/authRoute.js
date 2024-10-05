@@ -8,4 +8,5 @@ router.post("/verify-otp", verifyOtpCtrl)
 router.post("/reset-password", resetPasswordCtrl)
 
 
+
 module.exports = router;

@@ -13,6 +13,5 @@ router.route('/:productId')
 .put(verifyTokenOnlyUser,updateCart)
 .delete(verifyTokenOnlyUser,removeFromCart);
 
-router.route('/checkout').post(verifyTokenOnlyUser, checkout);
 
 module.exports = router;

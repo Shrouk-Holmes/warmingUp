@@ -14,6 +14,7 @@ app.use("/api/users", require("./routes/userRoute"));
 app.use("/api/cart", require("./routes/cartRoute.js"));
 app.use("/api/proudcts", require("./routes/proudctRoute.js"));
 app.use("/api/category", require("./routes/categoryRotes.js"));
+app.use("/api/checkout", require("./routes/checkOutRoute"));
 
 
 const PORT = process.env.PORT ||5001
