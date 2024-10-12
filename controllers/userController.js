@@ -1,6 +1,6 @@
 const bcrypt = require("bcryptjs");
 const asyncHandler = require("express-async-handler");
-const { User} = require("../models/authModel");
+const { User, validateUpdateUser} = require("../models/authModel");
 
 /**---------------------------------
  * @desc get all users profile
@@ -41,6 +41,8 @@ module.exports.getUserProfileCtrl = asyncHandler(async (req, res) => {
  * @method  PUT
  * @access  Private (user or admin)
  -----------------------------------*/
+
+ 
 module.exports.UpdateUserCtrl = asyncHandler(async (req, res) => {
     const { username, email, password } = req.body;
 

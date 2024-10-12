@@ -94,5 +94,15 @@ const validateResetPassword = (data) => {
     });
     return schema.validate(data);
 };
+function validateUpdateUser(obj){
+    const schema = Joi.object({
+        username : Joi.string().trim().min(2).max(100),
+        email : Joi.string().trim().min(5).max(100).email(),
+        password : Joi.string().trim().min(8),
+        confirmPassword: Joi.any().valid(Joi.ref('password'))
+    })
+    return schema.validate(obj)
+}
 
-module.exports ={User, validateLoginUser , validateRegisterUser,validateResetPassword};
+
+module.exports ={User, validateLoginUser , validateRegisterUser,validateResetPassword,validateUpdateUser};
