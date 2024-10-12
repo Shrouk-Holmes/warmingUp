@@ -6,7 +6,8 @@ const {
     updateProduct, 
     deleteProduct, 
     getBestSellers,
-    getOnSaleProducts
+    getOnSaleProducts,
+    updateProductImages
 } = require('../controllers/proudctController');
 const { verifyTokenAndAdmin } = require('../middlewares/vertifyToken');
 const validateObjectId = require('../middlewares/validateObjectId');
@@ -25,5 +26,8 @@ router.route('/:id')
 .get(getProductById)
 .put(validateObjectId,verifyTokenAndAdmin,photoUpload.array("image",6), updateProduct)
 .delete(validateObjectId,verifyTokenAndAdmin, deleteProduct);
+
+router.route('/:id/images').put(validateObjectId,verifyTokenAndAdmin,photoUpload.array("image",6), updateProductImages)
+
 
 module.exports = router;

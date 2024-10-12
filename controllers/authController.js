@@ -76,8 +76,6 @@ module.exports.loginUserCtrl = asyncHandler(async (req, res) => {
 
 })
 
-
-
 /**********************************
  * @desc forget password
  * @route api/auth/forgot-password

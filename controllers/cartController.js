@@ -2,6 +2,7 @@ const Cart = require('../models/cartModel');
 const Product = require('../models/proudctModel');
 const asyncHandler = require('express-async-handler');
 
+
 /**
  * ---------------------------------
  * @desc    Add a product to the cart
@@ -23,24 +24,19 @@ module.exports.addToCart = asyncHandler(async (req, res) => {
     // Calculate the price after applying the discount
     const discountedPrice = product.discount > 0 ? product.price * (1 - product.discount / 100) : product.price;
 
-    let cart = await Cart.findOne({ user: userId });
+    let cart = await Cart.findOne({ user: userId, 'products.product': productId });
 
-    if (!cart) {
-        cart = new Cart({ user: userId, products: [] });
-    }
-
-    // Check if the product already exists in the cart
-    const productIndex = cart.products.findIndex(p => p.product.toString() === productId);
-
-    if (productIndex > -1) {
-        // Product exists, update the quantity to the value from the request
-        cart.products[productIndex].quantity = quantity; // Replace the quantity
+    if (cart) {
+        // Update the quantity in this existing cart
+        cart.products[0].quantity = quantity;
     } else {
-        // Add new product to the cart
-        cart.products.push({ product: productId, quantity, price: discountedPrice });
+        // Create a new cart for this product
+        cart = new Cart({
+            user: userId,
+            products: [{ product: productId, quantity, price: discountedPrice }]
+        });
     }
     await cart.save();
-
     res.status(200).json({ message: 'Product added to cart', cart });
 });
 
@@ -55,24 +51,26 @@ module.exports.addToCart = asyncHandler(async (req, res) => {
 module.exports.getCart = asyncHandler(async (req, res) => {
     const userId = req.user._id;    
     // Fetch the user's cart with populated product details
-    const cart = await Cart.findOne({ user: userId }).populate('products.product');
+    const carts = await Cart.find({ user: userId }).populate('products.product');
 
-    if (!cart) {
-        return res.status(404).json({ message: 'Cart is empty' });
+    if (!carts || carts.length === 0) {
+        return res.status(404).json({ message: 'No carts found for this user' });
     }
 
-    // Calculate the total price (after discounts)
+    // Calculate total price for all products in all carts
     let totalPrice = 0;
-    cart.products.forEach(item => {
-        totalPrice += item.quantity * item.price;
+    carts.forEach(cart => {
+        cart.products.forEach(item => {
+            totalPrice += item.quantity * item.price;
+        });
     });
 
     res.status(200).json({
-        cart,
+        message: 'Carts retrieved successfully',
+        carts,
         totalPrice,
     });
 });
-
 /**
  * ---------------------------------
  * @desc    Update the quantity of a product in the cart

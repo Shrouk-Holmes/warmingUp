@@ -57,6 +57,9 @@ module.exports.createProduct = asyncHandler(async (req, res) => {
 // @access  Public
 module.exports.getAllProducts = asyncHandler(async (req, res) => {
     const categoryId = req.query.category;
+    const page = parseInt(req.query.page) || 1; // Default to page 1 if not provided
+    const limit = parseInt(req.query.limit) || 10; // Default to 10 items per page if not provided
+    const skip = (page - 1) * limit;
 
     let filter = {};
 
@@ -69,10 +72,23 @@ module.exports.getAllProducts = asyncHandler(async (req, res) => {
         filter.category = categoryId;
     }
 
-    const products = await Product.find(filter).populate('category', 'name');
+    // Fetch the total number of products that match the filter
+    const totalProducts = await Product.countDocuments(filter);
 
-    res.status(200).json(products);
+    // Fetch the paginated products
+    const products = await Product.find(filter)
+        .populate('category', 'name')
+        .skip(skip)
+        .limit(limit);
+
+    res.status(200).json({
+        totalProducts,        // Total number of products
+        currentPage: page,    // The current page
+        totalPages: Math.ceil(totalProducts / limit), // Total number of pages
+        products,            // The list of products for this page
+    });
 });
+
 
 // @desc    Get product by ID
 // @route   GET /api/products/:id
@@ -90,64 +106,128 @@ module.exports.getProductById = asyncHandler(async (req, res) => {
 // @desc    Update a product (Admin only)
 // @route   PUT /api/products/:id
 // @access  Private/Admin
+// module.exports.updateProduct = asyncHandler(async (req, res) => {
+//     const { error } = validateProductPartial(req.body);
+//     if (error) {
+//         return res.status(400).json({ message: error.details[0].message });
+//     }
+
+//     // Find the product
+//     const product = await Product.findById(req.params.id);
+//     if (!product) {
+//         return res.status(404).json({ message: 'Product not found' });
+//     }
+
+//     let updatedImages = [...product.image]; // Start with existing images
+
+//     // Handle deletion of selected images
+//     if (req.body.imagesToDelete && req.body.imagesToDelete.length > 0) {
+//         const imagesToDelete = req.body.imagesToDelete;
+
+//         // Remove selected images from Cloudinary
+//         await cloudinaryRemoveMultipleImages(imagesToDelete);
+
+//         // Remove selected images from the product
+//         updatedImages = updatedImages.filter(img => !imagesToDelete.includes(img.publicId));
+//     }
+
+//     // Handle new images upload only if files are provided
+//     if (req.files && req.files.length > 0) {
+//         for (const file of req.files) {
+//             const imagePath = path.join(__dirname, `../images/${file.filename}`);
+//             const result = await cloudinaryUploadImage(imagePath);
+//             updatedImages.push({
+//                 url: result.secure_url,
+//                 publicId: result.public_id,
+//             });
+
+//             // Remove the file after uploading
+//             fs.unlinkSync(imagePath);
+//         }
+//     }
+
+//     // Create an updated product data object
+//     const updatedProductData = {
+//         ...req.body,
+//         image: updatedImages, // Use the updated images array
+//     };
+
+//     // Update the product in the database
+//     const updatedProduct = await Product.findByIdAndUpdate(
+//         req.params.id,
+//         { $set: updatedProductData },
+//         { new: true, runValidators: true }
+//     );
+
+//     res.status(200).json(updatedProduct);
+// });
 module.exports.updateProduct = asyncHandler(async (req, res) => {
-    const { error } = validateProductPartial(req.body);
+    const { error } = validateProduct(req.body);
     if (error) {
         return res.status(400).json({ message: error.details[0].message });
     }
 
-    // Find the product
     const product = await Product.findById(req.params.id);
-    if (!product) {
+
+    if (!pr0oduct) {
         return res.status(404).json({ message: 'Product not found' });
     }
 
-    let updatedImages = [...product.image]; // Start with existing images
-
-    // Handle deletion of selected images
-    if (req.body.imagesToDelete && req.body.imagesToDelete.length > 0) {
-        const imagesToDelete = req.body.imagesToDelete;
-
-        // Remove selected images from Cloudinary
-        await cloudinaryRemoveMultipleImages(imagesToDelete);
-
-        // Remove selected images from the product
-        updatedImages = updatedImages.filter(img => !imagesToDelete.includes(img.publicId));
-    }
-
-    // Handle new images upload only if files are provided
-    if (req.files && req.files.length > 0) {
-        for (const file of req.files) {
-            const imagePath = path.join(__dirname, `../images/${file.filename}`);
-            const result = await cloudinaryUploadImage(imagePath);
-            updatedImages.push({
-                url: result.secure_url,
-                publicId: result.public_id,
-            });
-
-            // Remove the file after uploading
-            fs.unlinkSync(imagePath);
-        }
-    }
-
-    // Create an updated product data object
-    const updatedProductData = {
-        ...req.body,
-        image: updatedImages, // Use the updated images array
-    };
-
-    // Update the product in the database
     const updatedProduct = await Product.findByIdAndUpdate(
         req.params.id,
-        { $set: updatedProductData },
+        { $set: req.body },
         { new: true, runValidators: true }
     );
-
     res.status(200).json(updatedProduct);
 });
 
+// @desc    Update product images
+// @route   PUT /api/products/:id/images
+// @access  Private/Admin
+module.exports.updateProductImages = asyncHandler(async (req, res, next) => {
+    if (!req.files || req.files.length === 0) {
+        return res.status(400).json({ message: "No images provided" });
+    }
 
+    const product = await Product.findById(req.params.id);
 
+    if (!product) {
+        return res.status(404).json({ message: "Product not found" });
+    }
+
+    // Delete the old images from Cloudinary and the product model
+    for (const img of product.image) {
+        await cloudinaryRemoveImage(img.publicId);
+    }
+
+    // Upload new images to Cloudinary
+    const updatedImages = [];
+    for (const file of req.files) {
+        const imagePath = path.join(__dirname, `../images/${file.filename}`);
+        const result = await cloudinaryUploadImage(imagePath);
+
+        updatedImages.push({
+            url: result.secure_url,
+            publicId: result.public_id,
+        });
+
+        // Remove the image from local after uploading
+        fs.unlinkSync(imagePath);
+    }
+
+    // Update the product with the new images
+    const updatedProduct = await Product.findByIdAndUpdate(
+        req.params.id,
+        { $set: { image: updatedImages } },
+        { new: true }
+    );
+
+    res.status(200).json({
+        status: "SUCCESS",
+        message: "Product images updated successfully",
+        data: updatedProduct,
+    });
+});
 // @desc    Delete a product (Admin only)
 // @route   DELETE /api/products/:id
 // @access  Private/Admin 
