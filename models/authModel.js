@@ -99,7 +99,6 @@ function validateUpdateUser(obj){
         username : Joi.string().trim().min(2).max(100),
         email : Joi.string().trim().min(5).max(100).email(),
         password : Joi.string().trim().min(8),
-        confirmPassword: Joi.any().valid(Joi.ref('password'))
     })
     return schema.validate(obj)
 }

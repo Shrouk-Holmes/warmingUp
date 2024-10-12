@@ -9,7 +9,7 @@ function vertifyToken(req, res, next) {
             const decodedPayload = jwt.verify(token, process.env.JWT_SECRET);
             req.user = decodedPayload;
             next();
-        } catch (err) {
+      } catch (err) {
             return res.status(401).json({ message: "Invalid token" });
         }
     } else {
@@ -30,7 +30,9 @@ function verifyTokenAndAdmin(req, res, next) {
 
 function verifyTokenOnlyUser(req, res, next) {
     vertifyToken(req, res, () => {
-        if (req.user.id===req.params.id) {
+        console.log("params" +req.params.id )
+        console.log(req.user._id)
+        if (req.user.id===req.params._id) {
             next();
         } else {
             return res.status(403).json({ message: "not allowed, only user himself" });
@@ -42,7 +44,7 @@ function verifyTokenOnlyUser(req, res, next) {
 
 function verifyTokenAndAuth(req, res, next) {
     vertifyToken(req, res, () => {
-        if (req.user.id===req.params.id || req.user.isAdmin) {
+        if (req.user._id===req.params.id || req.user.isAdmin) {
             next();
         } else {
             return res.status(403).json({ message: "not allowed, only user himself or admin" });
